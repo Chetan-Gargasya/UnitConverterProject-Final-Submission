@@ -1,3 +1,5 @@
+package com.mycompany.unitconverter;
+
 import javax.swing.*;
 import java.awt.event.*;
 
@@ -5,11 +7,11 @@ public class UnitConverter extends JFrame {
     private JComboBox<String> categoryBox, fromUnitBox, toUnitBox;
     private JTextField inputField;
     private JLabel resultLabel;
-    private JButton convertButton;
+    private JButton convertButton, saveButton;
 
     public UnitConverter() {
         setTitle("Unit Converter");
-        setSize(400, 300);
+        setSize(400, 350);
         setLayout(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
 
@@ -35,14 +37,35 @@ public class UnitConverter extends JFrame {
         add(convertButton);
 
         resultLabel = new JLabel("Result: ");
-        resultLabel.setBounds(30, 150, 300, 25);
+        resultLabel.setBounds(30, 150, 350, 25);
         add(resultLabel);
+
+        saveButton = new JButton("Save to File");
+        saveButton.setBounds(140, 190, 120, 25);
+        add(saveButton);
 
         updateUnits();
 
         categoryBox.addActionListener(e -> updateUnits());
-
         convertButton.addActionListener(e -> convert());
+
+        // Save to file logic
+        saveButton.addActionListener(e -> {
+            try {
+                String resultText = resultLabel.getText();
+                if (resultText.equals("Result: ")) {
+                    JOptionPane.showMessageDialog(this, "Please perform a conversion first.");
+                    return;
+                }
+
+                java.io.FileWriter fw = new java.io.FileWriter("conversion_log.txt", true);
+                fw.write(resultText + "\n");
+                fw.close();
+                JOptionPane.showMessageDialog(this, "Conversion saved to conversion_log.txt");
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error saving to file.");
+            }
+        });
 
         setVisible(true);
     }
@@ -94,14 +117,17 @@ public class UnitConverter extends JFrame {
                     break;
             }
 
-            resultLabel.setText("Result: " + result);
+            String resultText = String.format(
+                "%s: %.2f %s -> %.2f %s",
+                category, inputValue, fromUnit, result, toUnit
+            );
+            resultLabel.setText(resultText);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Please enter a valid number.");
         }
     }
 
     private double convertLength(double value, String from, String to) {
-        // All in meters
         double meterValue = switch (from) {
             case "Millimeter" -> value / 1000;
             case "Centimeter" -> value / 100;
@@ -124,7 +150,6 @@ public class UnitConverter extends JFrame {
     }
 
     private double convertWeight(double value, String from, String to) {
-        // All in grams
         double gramValue = switch (from) {
             case "Kilogram" -> value * 1000;
             case "Hectogram" -> value * 100;
@@ -151,14 +176,12 @@ public class UnitConverter extends JFrame {
     private double convertTemperature(double value, String from, String to) {
         if (from.equals(to)) return value;
 
-        // First convert to Celsius
         double celsius = switch (from) {
             case "Fahrenheit" -> (value - 32) * 5 / 9;
             case "Kelvin" -> value - 273.15;
             default -> value;
         };
 
-        // Then convert to target unit
         return switch (to) {
             case "Fahrenheit" -> (celsius * 9 / 5) + 32;
             case "Kelvin" -> celsius + 273.15;
